@@ -1,0 +1,12 @@
+<launch>
+  <!-- 设置地图参数 -->
+  <arg name="map_file" default="/home/ubuntu/maps/playground.yaml" />
+
+  <!-- 启动导航系统（move_base + amcl + map_server） -->
+  <include file="$(find fetch_navigation)/launch/fetch_nav.launch">
+    <arg name="map_file" value="$(arg map_file)" />
+  </include>
+
+  <!-- 启动 RViz 并加载导航显示配置 -->
+  <node pkg="rviz" type="rviz" name="$(anon rviz)" args="-d $(find applications)/config/
+</launch>navigation.rviz" />
