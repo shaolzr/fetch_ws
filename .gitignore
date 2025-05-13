@@ -1,0 +1,12 @@
+build/
+devel/
+logs/
+.catkin_tools/
+.vscode/
+.devcontainer/
+*.swp
+*.swo
+*.pyc
+__pycache__/
+.DS_Store
+frames.gv 
