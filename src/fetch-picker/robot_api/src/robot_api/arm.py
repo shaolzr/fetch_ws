@@ -66,7 +66,7 @@ class Arm(object): # 定义 Arm 类控制机器人手臂
         traj = trajectory_msgs.msg.JointTrajectory()# 创建轨迹消息 把角度信息设置进去
 
         # TODO: Add joint name to list
-        traj.joint_names = ArmJoints.names()# 设置关节名称列表 告诉控制器“要控制哪些关节”
+        traj.joint_names = ArmJoints.names()# 设置关节名称列表 告诉控制器"要控制哪些关节"
         # TODO: Add the trajectory point created above to trajectory
         traj.points.append(point)# 添加轨迹点到轨迹消息
 
@@ -88,44 +88,54 @@ class Arm(object): # 定义 Arm 类控制机器人手臂
     #     Returns:
     #        string describing the error if an error occurred, else None.
     #     """
-    #     #lab 19提供的
+    #     # 创建一个MoveIt目标构建器，用于设置机器人的运动目标
     #     goal_builder = MoveItGoalBuilder()
+    #     # 设置目标位姿，pose_stamped包含了目标位置和方向信息
     #     goal_builder.set_pose_goal(pose_stamped)
+    #     # 构建最终的MoveIt运动目标
     #     goal = goal_builder.build()
 
+    #     # 发送运动目标到MoveIt运动规划器
     #     self._move_group_client.send_goal(goal)
+    #     # 等待运动执行完成，设置10秒超时时间
     #     finished = self._move_group_client.wait_for_result(rospy.Duration(10))  # Timeout version
 
+    #     # 如果超时未完成，返回超时错误信息
     #     if not finished:
     #         return 'Timeout waiting for result'
         
+    #     # 获取运动执行的结果
     #     result = self._move_group_client.get_result()
+    #     # 检查运动是否成功完成
     #     if result.error_code.val != MoveItErrorCodes.SUCCESS:
+    #         # 如果失败，返回具体的错误信息
     #         return Arm.moveit_error_string(result.error_code.val)
         
+    #     # 如果一切正常，返回None表示成功
     #     return None
 
     #Lab 20的move to pose
     def move_to_pose(self,
-                 pose_stamped,
-                 allowed_planning_time=10.0,
-                 execution_timeout=15.0,
-                 group_name='arm',
-                 num_planning_attempts=1,
-                 plan_only=False,
-                 replan=False,
-                 replan_attempts=5,
-                 tolerance=0.01,
-                 orientation_constraint=None):
+                 pose_stamped,                    # 目标位姿，包含位置和方向信息
+                 allowed_planning_time=10.0,      # 允许的规划时间，默认10秒
+                 execution_timeout=15.0,          # 执行超时时间，默认15秒
+                 group_name='arm',                # 要控制的机器人组名称，默认是'arm'
+                 num_planning_attempts=1,         # 规划尝试次数，默认1次
+                 plan_only=False,                 # 是否只规划不执行，默认False
+                 replan=False,                    # 是否允许重新规划，默认False
+                 replan_attempts=5,               # 重新规划的最大尝试次数，默认5次
+                 tolerance=0.01,                  # 位置误差容忍度，默认0.01米
+                 orientation_constraint=None):    # 方向约束，默认无约束
         """Moves the end-effector to a pose, using motion planning."""
-        goal_builder = MoveItGoalBuilder()
-        goal_builder.set_pose_goal(pose_stamped)
-        goal_builder.allowed_planning_time = allowed_planning_time
-        goal_builder.num_planning_attempts = num_planning_attempts
-        goal_builder.plan_only = plan_only
-        goal_builder.replan = replan
-        goal_builder.replan_attempts = replan_attempts
-        goal_builder.tolerance = tolerance
+        # 创建MoveIt目标构建器对象，用于设置运动目标
+        goal_builder = MoveItGoalBuilder() # 设置目标位姿，包含位置和方向信息
+        goal_builder.set_pose_goal(pose_stamped) # 设置规划时间限制，给规划器更多时间寻找解决方案
+        goal_builder.allowed_planning_time = allowed_planning_time # 设置规划尝试次数，可以多次尝试规划
+        goal_builder.num_planning_attempts = num_planning_attempts # 设置是否只规划不执行，用于检查路径是否可行
+        goal_builder.plan_only = plan_only # 设置是否允许重新规划，提高规划成功率
+        goal_builder.replan = replan # 设置重新规划的最大尝试次数
+        goal_builder.replan_attempts = replan_attempts # 设置位置误差容忍度，允许一定的位置误差
+        goal_builder.tolerance = tolerance # 设置要控制的机器人组名称，指定要控制的机器人部分
         goal_builder.group_name = group_name
 
         #Lab 22添加  修改方法内部，支持设置 orientation_constraint
@@ -133,50 +143,55 @@ class Arm(object): # 定义 Arm 类控制机器人手臂
             goal_builder.add_path_orientation_constraint(orientation_constraint)
 
 
+        # 构建运动目标
         goal = goal_builder.build()
-        # self._move_group_client.send_goal(goal)
 
-        # finished = self._move_group_client.wait_for_result(rospy.Duration(execution_timeout))
-        # if not finished:
-        #     return 'Timeout waiting for result'
-
-        # result = self._move_group_client.get_result()
-        # if result.error_code.val != MoveItErrorCodes.SUCCESS:
-        #     return Arm.moveit_error_string(result.error_code.val)
-        # return None
-
-        # Lab26
+        # 发送运动目标到MoveIt
         self._move_group_client.send_goal(goal)
+        # 等待执行结果，设置超时时间
         finished = self._move_group_client.wait_for_result(
                 rospy.Duration(execution_timeout))
 
+        # 如果超时未完成
         if not finished:
                 rospy.logwarn("MoveIt timeout")
-                return False                              # ⟵ 规划失败
+                return False                              # 返回规划失败
 
+        # 获取执行结果
         result = self._move_group_client.get_result()
+        # 检查执行结果是否成功
         if result.error_code.val == MoveItErrorCodes.SUCCESS:
-                return True                               # ⟵ 规划成功
+                return True                               # 返回规划成功
         else:
+                # 输出错误信息
                 rospy.logwarn("MoveIt failed: %s",
                             Arm.moveit_error_string(result.error_code.val))
-                return False                              # ⟵ 规划失败
+                return False                              # 返回规划失败
     
     #Lab 20 逆运动
     def compute_ik(self, pose_stamped, timeout=rospy.Duration(5)):
-        """Computes inverse kinematics for the given pose."""
+        """计算给定位姿的逆运动学解"""
+        # 创建逆运动学请求
         request = GetPositionIKRequest()
+        # 设置目标位姿
         request.ik_request.pose_stamped = pose_stamped
+        # 设置运动组名称
         request.ik_request.group_name = 'arm'
+        # 设置超时时间
         request.ik_request.timeout = timeout
+        # 发送请求并获取响应
         response = self._compute_ik(request)
+        # 获取错误信息
         error_str = Arm.moveit_error_string(response.error_code.val)
+        # 检查是否成功
         success = error_str == 'SUCCESS'
         if not success:
             return False
+        # 获取关节状态
         joint_state = response.solution.joint_state
+        # 输出每个关节的位置
         for name, position in zip(joint_state.name, joint_state.position):
-            if name in ArmJoints.names():  # 确保你有这个方法，或自己写个列表返回各关节名
+            if name in ArmJoints.names():
                 rospy.loginfo('{}: {}'.format(name, position))
         return True
 
@@ -186,6 +201,7 @@ class Arm(object): # 定义 Arm 类控制机器人手臂
                allowed_planning_time=10.0,
                group_name='arm',
                tolerance=0.01):
+        # 调用move_to_pose进行规划检查
         return self.move_to_pose(
             pose_stamped,
             allowed_planning_time=allowed_planning_time,
@@ -197,20 +213,20 @@ class Arm(object): # 定义 Arm 类控制机器人手臂
     
     #Lab 19 添加取消方法 cancel_all_goals
     def cancel_all_goals(self):
-        self._arm_ac.cancel_all_goals() # Your action client from Lab 7 替代成lab7的client
-        self._move_group_client.cancel_all_goals() # From this lab
+        self._arm_ac.cancel_all_goals() # 取消动作客户端的运动
+        self._move_group_client.cancel_all_goals() # 取消MoveIt客户端的运动
     
     #Lab 19 添加工具函数 moveit_error_string
     @staticmethod
     def moveit_error_string(val):
-        """Returns a string associated with a MoveItErrorCode.
+        """返回与MoveItErrorCode关联的字符串
+        
+        参数:
+            val: moveit_msgs/MoveItErrorCodes.msg中的val字段
             
-        Args:
-            val: The val field from moveit_msgs/MoveItErrorCodes.msg
-            
-        Returns: The string associated with the error value, 'UNKNOWN_ERROR_CODE'
-            if the value is invalid.
+        返回: 与错误值关联的字符串，如果值无效则返回'UNKNOWN_ERROR_CODE'
         """ 
+        # 根据不同的错误码返回对应的错误信息
         if val == MoveItErrorCodes.SUCCESS:
             return 'SUCCESS'
         elif val == MoveItErrorCodes.FAILURE:

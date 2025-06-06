@@ -15,6 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   tf
+  geometry_msgs
+  visualization_msgs
+  pcl_conversions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -115,10 +118,11 @@ catkin_python_setup()
 # )
 #Lab 29
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS ../include
   LIBRARIES
     perception_crop
     perception_downsample
+    perception_segmentation
 # CATKIN_DEPENDS roscpp rospy
 # DEPENDS system_lib
 )
@@ -131,12 +135,12 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # Lab27
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 # Lab27
-# add_definitions(${PCL_DEFINITIONS})
+add_definitions(${PCL_DEFINITIONS})
 # add_library(perception_awesome_algorithm src/awesome_algorithm.cpp)
 # add_dependencies(perception_awesome_algorithm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # target_link_libraries(perception_awesome_algorithm
@@ -162,6 +166,7 @@ add_dependencies(perception_point_cloud_demo ${${PROJECT_NAME}_EXPORTED_TARGETS}
 target_link_libraries(perception_point_cloud_demo
   perception_crop
   perception_downsample
+  perception_segmentation
   ${catkin_LIBRARIES}
 )
 
@@ -260,3 +265,16 @@ target_link_libraries(perception_downsample ${catkin_LIBRARIES})
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(point_cloud_demo1 src/point_cloud_demo1.cpp)
+target_link_libraries(point_cloud_demo1
+  perception_crop
+  perception_downsample
+  perception_segmentation
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+)
+
+install(TARGETS point_cloud_demo1
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
